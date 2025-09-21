@@ -912,6 +912,17 @@ class MobileBrowserSimulator:
                     self.log_message(f"✅ 第 {self.current_visits} 次访问完成")
                     # 成功时重置失败计数
                     self.consecutive_failures = 0
+                    
+                    # 访问完成后立即关闭浏览器（非HTTP模式）
+                    if not self.use_http_mode.get():
+                        self.log_message("🔄 访问完成，关闭浏览器...")
+                        try:
+                            if hasattr(self, 'driver') and self.driver:
+                                self.driver.quit()
+                                self.driver = None
+                                self.log_message("✅ 浏览器已关闭")
+                        except Exception as e:
+                            self.log_message(f"关闭浏览器时出错: {str(e)}")
                 else:
                     self.log_message(f"❌ 第 {self.current_visits} 次访问失败")
                     
