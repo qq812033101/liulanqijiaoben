@@ -16,12 +16,13 @@ import sys
 from urllib.parse import quote
 import logging
 import ssl
+from datetime import datetime, timedelta
 
 class MobileBrowserSimulator:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("JB")
-        self.root.geometry("800x800")  # 增加高度以容纳代理列表
+        self.root.geometry("1200x1200")  # 增加高度以容纳代理列表
         self.root.resizable(True, True)
         
         # 配置变量
@@ -763,7 +764,7 @@ class MobileBrowserSimulator:
                 error_msg = str(e).lower()
                 self.log_message(f"🔒 SSL/TLS错误: {str(e)}")
                 
-                if "wrong version number" in error_msg:
+                if "wrong version number in error_msg":
                     self.log_message("🔍 检测到SSL版本号错误 - 这通常表示代理返回了非HTTPS响应")
                     self.log_message("💡 建议：1) 代理可能不支持HTTPS 2) 尝试切换到HTTP协议代理 3) 更换代理服务器")
                     
@@ -1110,7 +1111,17 @@ class MobileBrowserSimulator:
     def run(self):
         """运行应用"""
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # 启动时检查脚本是否过期（在UI初始化完成后）
+        self.root.after(100, self.check_expiration_on_startup)
+        
         self.root.mainloop()
+    
+    def check_expiration_on_startup(self):
+        """启动时检查过期时间"""
+        if not self.check_expiration():
+            # 脚本已过期，直接退出
+            self.root.destroy()
         
     def on_closing(self):
         """关闭应用时的处理"""
@@ -1260,6 +1271,40 @@ class MobileBrowserSimulator:
         
         # 设置下一个代理
         return self.set_current_proxy(next_index)
+    
+    def check_expiration(self):
+        """检查脚本是否过期"""
+        try:
+            # 设置固定的过期时间（2025年9月25日 19:06:00）
+            # 这是从当前时间开始的3天后
+            expiration_time = datetime(2025, 9, 30, 23, 59, 59)
+            
+            # 检查当前时间是否超过过期时间
+            current_time = datetime.now()
+            
+            if current_time > expiration_time:
+                # 脚本已过期，显示消息并关闭
+                messagebox.showerror("脚本已过期", 
+                    f"此脚本已于 {expiration_time.strftime('%Y-%m-%d %H:%M:%S')} 过期。\n"
+                    f"当前时间: {current_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    "脚本将自动关闭。")
+                return False
+            else:
+                # 脚本未过期，显示剩余时间
+                remaining_time = expiration_time - current_time
+                remaining_days = remaining_time.days
+                remaining_hours = remaining_time.seconds // 3600
+                remaining_minutes = (remaining_time.seconds % 3600) // 60
+                
+                self.log_message(f"✅ 脚本启动成功！")
+                self.log_message(f"📅 过期时间: {expiration_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                self.log_message(f"⏰ 剩余时间: {remaining_days}天 {remaining_hours}小时 {remaining_minutes}分钟")
+                return True
+                
+        except Exception as e:
+            self.log_message(f"⚠️ 时间戳检查出错: {str(e)}")
+            # 如果检查出错，默认允许运行
+            return True
 
 if __name__ == "__main__":
     app = MobileBrowserSimulator()
