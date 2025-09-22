@@ -28,7 +28,7 @@ class MobileBrowserSimulator:
         # 配置变量
         self.target_url = tk.StringVar(value="")
         self.visit_count = tk.IntVar(value=100)
-        self.visit_interval = tk.IntVar(value=30)
+        self.visit_interval = tk.IntVar(value=5)
         self.stay_time = tk.IntVar(value=10)
         # 新增：HTTP模式（不打开浏览器）
         self.use_http_mode = tk.BooleanVar(value=False)
