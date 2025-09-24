@@ -1,0 +1,7 @@
+ttkbootstrap
+selenium
+requests
+fake-useragent
+webdriver-manager
+PySocks
+selenium-wire
