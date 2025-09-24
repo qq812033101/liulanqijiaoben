@@ -21,13 +21,15 @@ from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from fake_useragent import UserAgent
+
 import json
 import os
 import sys
 from urllib.parse import quote
 import logging
 from datetime import datetime, date
+
+
 
 # --- 全局变量定义 ---
 
@@ -42,6 +44,7 @@ class 移动浏览器模拟器:
 
         # --- 初始化变量 ---
         self.目标网站 = tk.StringVar()
+        self.浏览器选择 = tk.StringVar(value='chrome')
         self.调用次数 = tk.IntVar(value=100)
         self.调用间隔 = tk.IntVar(value=5)
         self.停留时间 = tk.IntVar(value=10)
@@ -49,6 +52,76 @@ class 移动浏览器模拟器:
         self.当前代理索引 = 0
         self.是否正在运行 = False
         self.访问线程 = None
+
+        # --- 手动管理 User-Agent ---
+        self.所有UserAgents = {
+            'chrome': [
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.7 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1"
+            ],
+            'firefox': [
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.7 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1"
+            ],
+            'edge': [
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.7 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_8 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1"
+            ]
+        }
 
         self.创建组件()
 
@@ -83,14 +156,18 @@ class 移动浏览器模拟器:
         ttk.Label(控制框架, text="目标网站:").grid(row=0, column=0, padx=5, pady=5, sticky=W)
         ttk.Entry(控制框架, textvariable=self.目标网站, width=50).grid(row=0, column=1, padx=5, pady=5, sticky=EW)
 
-        ttk.Label(控制框架, text="调用次数:").grid(row=1, column=0, padx=5, pady=5, sticky=W)
-        ttk.Entry(控制框架, textvariable=self.调用次数, width=10).grid(row=1, column=1, padx=5, pady=5, sticky=W)
+        ttk.Label(控制框架, text="浏览器类型:").grid(row=1, column=0, padx=5, pady=5, sticky=W)
+        浏览器下拉框 = ttk.Combobox(控制框架, textvariable=self.浏览器选择, values=['chrome', 'firefox', 'edge'], state="readonly")
+        浏览器下拉框.grid(row=1, column=1, padx=5, pady=5, sticky=W)
 
-        ttk.Label(控制框架, text="调用间隔(秒):").grid(row=2, column=0, padx=5, pady=5, sticky=W)
-        ttk.Entry(控制框架, textvariable=self.调用间隔, width=10).grid(row=2, column=1, padx=5, pady=5, sticky=W)
+        ttk.Label(控制框架, text="调用次数:").grid(row=2, column=0, padx=5, pady=5, sticky=W)
+        ttk.Entry(控制框架, textvariable=self.调用次数, width=10).grid(row=2, column=1, padx=5, pady=5, sticky=W)
 
-        ttk.Label(控制框架, text="停留时间(秒):").grid(row=3, column=0, padx=5, pady=5, sticky=W)
-        ttk.Entry(控制框架, textvariable=self.停留时间, width=10).grid(row=3, column=1, padx=5, pady=5, sticky=W)
+        ttk.Label(控制框架, text="调用间隔(秒):").grid(row=3, column=0, padx=5, pady=5, sticky=W)
+        ttk.Entry(控制框架, textvariable=self.调用间隔, width=10).grid(row=3, column=1, padx=5, pady=5, sticky=W)
+
+        ttk.Label(控制框架, text="停留时间(秒):").grid(row=4, column=0, padx=5, pady=5, sticky=W)
+        ttk.Entry(控制框架, textvariable=self.停留时间, width=10).grid(row=4, column=1, padx=5, pady=5, sticky=W)
 
         按钮框架 = ttk.Frame(主控制页, padding="10")
         按钮框架.pack(fill=X, pady=10)
@@ -244,6 +321,12 @@ class 移动浏览器模拟器:
             return False, 错误消息
 
 
+    def 获取随机UserAgent(self, 浏览器类型):
+        """获取一个随机的User-Agent，如果找不到指定类型，则默认为'chrome'"""
+        ua_list = self.所有UserAgents.get(浏览器类型, self.所有UserAgents['chrome'])
+        return random.choice(ua_list)
+
+
     def 开始访问(self):
         """开始自动化访问流程"""
         if self.是否正在运行:
@@ -295,6 +378,9 @@ class 移动浏览器模拟器:
         停留时间 = self.停留时间.get()
         目标网站 = self.目标网站.get().strip()
 
+        浏览器类型 = self.浏览器选择.get()
+        user_agent = self.获取随机UserAgent(浏览器类型)
+
         for i in range(调用次数):
             if not self.是否正在运行:
                 self.记录日志("检测到停止信号，访问流程终止。")
@@ -328,15 +414,30 @@ class 移动浏览器模拟器:
                     'verify_ssl': False  # 禁用SSL证书验证，作为解决连接问题的辅助手段
                 }
 
-                chrome_options = ChromeOptions()
-                chrome_options.add_argument(f'--user-agent={UserAgent().random}')
-                chrome_options.add_experimental_option("mobileEmulation", {"deviceName": "iPhone X"})
-                chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-                chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
-                chrome_options.add_argument("--ignore-certificate-errors") # 浏览器级别也忽略证书错误
+                # --- 浏览器和User-Agent配置 ---
+                mobile_emulation = {"deviceName": "iPhone X"}
 
-                # 创建driver实例，并传入selenium-wire的选项
-                driver = webdriver.Chrome(options=chrome_options, seleniumwire_options=seleniumwire_options)
+                if 浏览器类型 == 'chrome':
+                    options = ChromeOptions()
+                    options.add_argument(f'--user-agent={user_agent}')
+                    options.add_experimental_option("mobileEmulation", mobile_emulation)
+                    options.add_argument('--disable-blink-features=AutomationControlled')
+                    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+                    options.add_argument("--ignore-certificate-errors")
+                    driver = webdriver.Chrome(options=options, seleniumwire_options=seleniumwire_options)
+                elif 浏览器类型 == 'firefox':
+                    options = FirefoxOptions()
+                    options.set_preference("general.useragent.override", user_agent)
+                    options.add_argument("--ignore-certificate-errors")
+                    driver = webdriver.Firefox(options=options, seleniumwire_options=seleniumwire_options)
+                elif 浏览器类型 == 'edge':
+                    options = EdgeOptions()
+                    options.add_argument(f'--user-agent={user_agent}')
+                    options.add_experimental_option("mobileEmulation", mobile_emulation)
+                    options.add_argument('--disable-blink-features=AutomationControlled')
+                    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+                    options.add_argument("--ignore-certificate-errors")
+                    driver = webdriver.Edge(options=options, seleniumwire_options=seleniumwire_options)
 
                 self.记录日志(f"浏览器已启动，通过selenium-wire代理访问: {目标网站}")
                 driver.get(目标网站)
