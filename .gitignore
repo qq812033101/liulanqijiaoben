@@ -1,0 +1,15 @@
+# Python 虚拟环境
+venv/
+
+# PyInstaller 打包生成的文件
+build/
+dist/
+*.spec
+
+# IDE 配置文件
+.idea/
+.vscode/
+
+# Python 缓存
+__pycache__/
+*.pyc

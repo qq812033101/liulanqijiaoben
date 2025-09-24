@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# --- 授权配置 ---
+# 请在此处设置授权截止日期，格式为 "YYYY-MM-DD"
+# 程序将在该日期之后停止工作。
+授权截止日期 = "2025-10-01"
+# --- 授权配置结束 ---
+
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, filedialog
 from urllib.parse import quote
@@ -21,7 +27,7 @@ import os
 import sys
 from urllib.parse import quote
 import logging
-from datetime import datetime
+from datetime import datetime, date
 
 # --- 全局变量定义 ---
 
@@ -375,6 +381,26 @@ class 移动浏览器模拟器:
         self.日志文本框.see(tk.END)
 
 if __name__ == "__main__":
+    try:
+        截止日期 = datetime.strptime(授权截止日期, "%Y-%m-%d").date()
+        今天 = date.today()
+
+        if 今天 > 截止日期:
+            # 使用一个临时的tk根窗口来显示messagebox，然后销毁它
+            临时根窗口 = tk.Tk()
+            临时根窗口.withdraw() # 隐藏临时窗口
+            messagebox.showerror("授权已过期", f"您的软件使用授权已于 {授权截止日期} 到期，请联系管理员续期。")
+            临时根窗口.destroy()
+            sys.exit() # 退出程序
+
+    except (ValueError, NameError):
+        # 如果日期格式错误或变量不存在，也阻止程序运行
+        临时根窗口 = tk.Tk()
+        临时根窗口.withdraw()
+        messagebox.showerror("授权配置错误", "授权配置文件损坏或格式不正确，请联系管理员。")
+        临时根窗口.destroy()
+        sys.exit()
+
     根窗口 = ttk.Window(themename="superhero")
     应用 = 移动浏览器模拟器(根窗口)
     根窗口.mainloop()
